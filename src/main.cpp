@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <sewparser.h>
 #include "sew-wifi-config.h"
 #include "sew-web-server.hpp"
 #include "sew-mqtt.hpp"
@@ -6,33 +7,42 @@
 SewWebServer sewServer;
 SewMQTT sewMQTT;
 
-/*
-uint8_t macMotorLeft[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
-uint8_t macMotorRight[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02};
-uint8_t macDistanceFront[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03};
-uint8_t macDistanceBack[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04};
-*/
+
+uint8_t MML[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
+uint8_t MMR[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02};
+uint8_t MDF[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03};
+uint8_t MDB[8] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04};
+
+uint8_t* macMotorLeft = WiFi.macAddress(MML);
+uint8_t* macMotorRight = WiFi.macAddress(MMR);
+uint8_t* macDistanceFront = WiFi.macAddress(MDF);
+uint8_t* macDistanceBack = WiFi.macAddress(MDB);
+
 // Subscribers
-String subscriptionMotorLeft = WiFi.macAddress() + "/motor/00:01/action";
-String subscriptionMotorRight = WiFi.macAddress() + "/motor/00:02/action";
-String subscriptionDistanceFront = WiFi.macAddress() + "/distance/00:03/action";
-String subscriptionDistanceBack = WiFi.macAddress() + "/distance/00:04/action";
+String MAC = WiFi.macAddress();
+String subscriptionMotorLeft = MAC + "/motor/" + MAC + ":00:01/action";
+String subscriptionMotorRight = MAC + "/motor/" + MAC + ":00:02/action";
+String subscriptionDistanceFront = MAC + "/distance/" + MAC + ":00:03/action";
+String subscriptionDistanceBack = MAC + "/distance/" + MAC + ":00:04/action";
 String subscriptions[] = {subscriptionMotorLeft, subscriptionMotorRight, subscriptionDistanceFront, subscriptionDistanceBack};
 
 // Publishers
-String publishMotorLeft = WiFi.macAddress() + "/motor/00:01/status";
-String publishMotorRight = WiFi.macAddress() + "/motor/00:02/status";
-String publishDistanceFront = WiFi.macAddress() + "/distance/00:03/status";
-String publishDistanceBack = WiFi.macAddress() + "/distance/00:04/status";
+String publishMotorLeft = MAC + "/motor/" + MAC + ":00:01/status";
+String publishMotorRight = MAC + "/motor/" + MAC + ":00:02/status";
+String publishDistanceFront = MAC + "/distance/" + MAC + ":00:03/status";
+String publishDistanceBack = MAC + "/distance/" + MAC + ":00:04/status";
 String publications[] = {publishMotorLeft, publishMotorRight, publishDistanceFront, publishDistanceBack};
 
 void mqttMessages(char* topic, uint8_t* payload, uint8_t length)
 {
-    Serial.println("Message from " + String(topic));
+    Serial.println("MQTT Message from " + String(topic));
 }
 
 void onMQTTConnect() {
     Serial.println("Connected MQTT");
+    FRAME frame;
+    SewParser::encodeDCMotor(frame, macMotorLeft, 1, 0, 200);
+    sewMQTT.publish(0, frame.frame, frame.size);
 }
 
 void onMotorRequest(WebServer& ws) {

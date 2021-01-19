@@ -105,7 +105,8 @@ void SewMQTT::setPublishers(String *publishers, size_t len) {
 
 int SewMQTT::publish(int channel, const uint8_t* payload, unsigned int plength) {
     if(channel >= 0 && channel < totalPublishers) {
-        client->publish(publishers[channel].c_str(), payload, plength);
+        String targetTopic = this->topic + publishers[channel];
+        client->publish(targetTopic.c_str(), payload, plength);
         return 0;
     }
     return -1;
@@ -122,13 +123,19 @@ String SewMQTT::getInfo()
 
     response += "\",\"publish\":[";
     for(int i = 0; i < totalPublishers; i++) {
-        response += "\"" + topic + publishers[i] + "\",";
+        response += "\"" + topic + publishers[i] + "\"";
+        if (i < totalPublishers - 1) {
+            response += ",";
+        }
     }
     response += "]";
 
     response += ",\"subscribe\":[";
     for(int i = 0; i < totalSubscribers; i++) {
-        response += "\"" + topic + subscribers[i] + "\",";
+        response += "\"" + topic + subscribers[i] + "\"";
+        if (i < totalSubscribers - 1) {
+            response += ",";
+        }
     }
     response += "]";
 
